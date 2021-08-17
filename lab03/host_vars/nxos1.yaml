@@ -1,18 +1,12 @@
 ---
-# Connection details for SSH/CLI Access
-provider_ssh:
-  host: 127.0.0.1
-  port: 2222
-  username: vagrant
-  password: vagrant
-  transport: cli
-# Connection details for NX-API Access
-provider_nxapi:
-  host: 127.0.0.1
-  port: 2224
-  username: vagrant
-  password: vagrant
-  transport: nxapi
+# Modern ansible doesn't use provider.
+
+ansible_network_os: nxos
+ansible_host: 127.0.0.1
+ansible_port: 2222
+ansible_user: vagrant
+ansible_password: vagrant
+ansible_httpapi_port: 2224
 
 interfaces:
     - name: Loopback11

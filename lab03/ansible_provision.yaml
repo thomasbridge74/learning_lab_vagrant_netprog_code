@@ -11,7 +11,7 @@
 ---
 - name: Provision NX-OS Devices
   hosts: vagrant
-  connection: local
+  connection: ansible.netcommon.httpapi
   gather_facts: false
 
   tasks:
@@ -21,29 +21,47 @@
 
     - name: Enable NX-API
       nxos_feature:
-        provider: "{{provider_ssh}}"
         feature: nxapi
         state: enabled
+      connection: ansible.netcommon.network_cli
+
+    # This is required as more recent images seem to default to HTTPS only.
+
+    - name: Configure nxapi to use http
+      cisco.nxos.nxos_nxapi:
+        http: yes
+        http_port: 80
+      connection: ansible.netcommon.network_cli
 
     - name: Configure System Settings
       nxos_system:
-        provider: "{{provider_nxapi}}"
         hostname: "{{ inventory_hostname }}"
 
     - name: Configure Interfaces
       with_items: "{{ interfaces }}"
-      nxos_interface:
-        provider: "{{provider_nxapi}}"
-        interface: "{{ item.name }}"
-        mode: layer3
-        description: "{{ item.desc }}"
-        admin_state: up
+      nxos_interfaces:
+        config:
+          - name: "{{ item.name }}"
+            mode: layer3
+            description: "{{ item.desc }}"
+            enabled: true
+      when: "'oopback' not in item.name"
+
+    - name: Configure Loopback Interfaces
+      with_items: "{{ interfaces }}"
+      nxos_interfaces:
+        config:
+          - name: "{{ item.name }}"
+            description: "{{ item.desc }}"
+            enabled: true
+      when: "'oopback' in item.name"
 
     - name: Configure IPv4 Address on Interface
       with_items: "{{ interfaces }}"
-      nxos_ip_interface:
-        provider: "{{provider_nxapi}}"
-        interface: "{{ item.name }}"
-        version: v4
-        addr: "{{ item.ip_address }}"
-        mask: "{{ item.prefix }}"
+      cisco.nxos.nxos_l3_interfaces:
+        config:
+          - name: "{{ item.name }}"
+            ipv4:
+              - address: "{{ item.ip_address }}/{{ item.prefix }}"
+
+
